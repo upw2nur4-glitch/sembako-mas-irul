@@ -407,7 +407,7 @@
       updateCartUI();
     }
 
-    function updateCartUI() {
+function updateCartUI() {
       let totalCount = 0; let totalPrice = 0;
       Object.keys(cart).forEach(itemKey => {
         const [pId] = itemKey.split('-');
@@ -420,7 +420,7 @@
       document.getElementById('cartCount').innerText = totalCount;
       document.getElementById('cartTotalPrice').innerText = `Rp ${totalPrice.toLocaleString('id-ID')}`;
       document.getElementById('modalTotalPrice').innerText = `Rp ${totalPrice.toLocaleString('id-ID')}`;
-    }
+    } // <--- KURUNG INI YANG KURANG DI KODEMU TADI!
 
     function openCheckoutModal() {
       if (Object.keys(cart).length === 0) { alert("Keranjang kosong!"); return; }
@@ -433,19 +433,56 @@
         const variantText = (variant && variant !== 'default') ? ` (${variant})` : '';
         
         return `
-          <div class="flex justify-between items-center bg-slate-50 p-2 rounded-lg text-xs border border-slate-200">
+          <div class="flex justify-between items-center bg-slate-50 p-2.5 rounded-lg text-xs border border-slate-200">
             <div>
               <p class="font-bold text-slate-800">${product.name}${variantText}</p>
-              <p class="text-slate-500">${qty} x Rp ${product.price.toLocaleString('id-ID')}</p>
+              <p class="text-slate-500">Rp ${product.price.toLocaleString('id-ID')} x ${qty}</p>
             </div>
-            <span class="font-bold text-emerald-700">Rp ${(product.price * qty).toLocaleString('id-ID')}</span>
+            
+            <div class="flex items-center gap-2">
+              <!-- Tombol Kurang (-) & Hapus Otomatis -->
+              <button type="button" onclick="changeQty('${itemKey}', -1)" class="bg-slate-200 hover:bg-slate-300 text-slate-700 w-6 h-6 rounded font-bold flex items-center justify-center">-</button>
+              
+              <span class="font-bold w-5 text-center">${qty}</span>
+              
+              <!-- Tombol Tambah (+) -->
+              <button type="button" onclick="changeQty('${itemKey}', 1)" class="bg-slate-200 hover:bg-slate-300 text-slate-700 w-6 h-6 rounded font-bold flex items-center justify-center">+</button>
+            </div>
           </div>
         `;
       }).join('');
       document.getElementById('checkoutModal').classList.remove('hidden');
     }
 
-    function closeCheckoutModal() { document.getElementById('checkoutModal').classList.add('hidden'); }
+    // Fungsi khusus untuk ubah jumlah item dari modal checkout
+    function changeQty(itemKey, delta) {
+      if (cart[itemKey] !== undefined) {
+        cart[itemKey] += delta;
+        
+        // Kalau jumlahnya <= 0, otomatis hapus dari keranjang
+        if (cart[itemKey] <= 0) {
+          delete cart[itemKey];
+        }
+      }
+      
+      // Simpan perubahan ke localStorage & perbarui tampilan web
+      localStorage.setItem('cart_mas_irul', JSON.stringify(cart));
+      updateCartUI();
+      renderProducts();
+      
+      // Kalau keranjang habis, tutup modalnya secara otomatis
+      if (Object.keys(cart).length === 0) {
+        closeCheckoutModal();
+        return;
+      }
+      
+      // Refresh ulang isi modal supaya angkanya ikut terupdate
+      openCheckoutModal();
+    }
+
+    function closeCheckoutModal() { 
+      document.getElementById('checkoutModal').classList.add('hidden'); 
+    }
 
     function handleCheckout(e) {
       e.preventDefault();
@@ -455,7 +492,7 @@
       const note = document.getElementById('custNote').value || '-';
 
       let itemsText = ""; let total = 0; let totalCost = 0;
-
+      
       Object.keys(cart).forEach(itemKey => {
         const [pId, variant] = itemKey.split('-');
         const product = products.find(p => p.id == pId);
